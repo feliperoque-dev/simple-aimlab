@@ -45,6 +45,15 @@
       this.sinP = Math.sin(this.pitch);
     }
 
+    // Ponto do mundo que está exatamente sob a mira, à profundidade z dada.
+    aimPoint(z, out) {
+      const fz = Math.max(this.cosY * this.cosP, 0.05);
+      out.x = (this.sinY * this.cosP * z) / fz;
+      out.y = (this.sinP * z) / fz;
+      out.z = z;
+      return out;
+    }
+
     // Mundo -> espaço da câmera (z = profundidade à frente da mira).
     toCamera(x, y, z, out) {
       const x1 = x * this.cosY - z * this.sinY;

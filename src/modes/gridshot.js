@@ -1,5 +1,4 @@
-// Modo "3 bolinhas": sempre 3 alvos numa grade 5x5; acertou, nasce outro.
-// Não toca em DOM nem em canvas: só regras e estatísticas.
+// Treino "3 alvos": sempre 3 bolinhas numa grade 5x5; acertou, nasce outra.
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
@@ -10,72 +9,23 @@
   const MIN_DISTANCE = 5.5;
   const MAX_DISTANCE = 7.5;
   const TARGET_COUNT = 3;
-  const HIT_POINTS = 100;
-  const MISS_PENALTY = 50;
-  const EFFECT_MS = 180;
 
-  const tmp = { x: 0, y: 0, z: 0 };
-
-  class Gridshot {
-    constructor({ radius, duration }) {
-      this.radius = radius;
-      this.duration = duration; // segundos
-      this.targets = []; // { cell, x, y, z }
-      this.effects = []; // { x, y, z, t0 }
-      this.effectMs = EFFECT_MS;
-      this.hits = 0;
-      this.shots = 0;
-      this.elapsed = 0;
-      this.finished = false;
-      this.startTime = 0;
+  class Gridshot extends Aim.ClickMode {
+    constructor(options) {
+      super(options);
       for (let i = 0; i < TARGET_COUNT; i++) this.targets.push(this._spawn(-1));
     }
 
-    start(now) {
-      this.startTime = now;
+    onKill(index) {
+      this.targets[index] = this._spawn(this.targets[index].cell);
     }
 
-    update(now) {
-      this.elapsed = Math.min((now - this.startTime) / 1000, this.duration);
-      if (this.elapsed >= this.duration) this.finished = true;
-      while (this.effects.length && now - this.effects[0].t0 > EFFECT_MS) this.effects.shift();
-    }
-
-    // A mira é o centro da tela, ou seja, o eixo Z da câmera.
-    // Retorna true se acertou.
-    shoot(camera, now) {
-      this.shots++;
-      let hitIndex = -1;
-      let hitDepth = Infinity;
-      for (let i = 0; i < this.targets.length; i++) {
-        const t = this.targets[i];
-        camera.toCamera(t.x, t.y, t.z, tmp);
-        if (tmp.z <= 0 || tmp.z >= hitDepth) continue;
-        if (tmp.x * tmp.x + tmp.y * tmp.y <= this.radius * this.radius) {
-          hitIndex = i;
-          hitDepth = tmp.z;
-        }
-      }
-      if (hitIndex < 0) return false;
-
-      const hit = this.targets[hitIndex];
-      this.hits++;
-      this.effects.push({ x: hit.x, y: hit.y, z: hit.z, t0: now });
-      this.targets[hitIndex] = this._spawn(hit.cell);
-      return true;
-    }
-
-    get score() {
-      return Math.max(0, this.hits * HIT_POINTS - (this.shots - this.hits) * MISS_PENALTY);
-    }
-
-    get accuracy() {
-      return this.shots ? this.hits / this.shots : 0;
-    }
-
-    // Tempo médio por alvo em ms (0 se não acertou nada).
-    get avgKillMs() {
-      return this.hits ? (this.elapsed * 1000) / this.hits : 0;
+    results() {
+      return [
+        ['Acertos / tiros', `${this.hits} / ${this.shots}`],
+        ['Precisão', `${(this.accuracy * 100).toFixed(1)}%`],
+        ['Tempo médio por alvo', this.hits ? `${Math.round(this.avgKillMs)} ms` : '—'],
+      ];
     }
 
     _spawn(excludeCell) {
@@ -94,20 +44,11 @@
         z,
       };
     }
-
-    // Linhas da tela de resultado.
-    results() {
-      return [
-        ['Acertos / tiros', `${this.hits} / ${this.shots}`],
-        ['Precisão', `${(this.accuracy * 100).toFixed(1)}%`],
-        ['Tempo médio por alvo', this.hits ? `${Math.round(this.avgKillMs)} ms` : '—'],
-      ];
-    }
   }
 
   Aim.MODES.gridshot = {
-    label: '3 alvos (clicar)',
-    description: '3 alvos na tela. Acertou um, nasce outro. Clique esquerdo atira.',
+    label: '3 alvos',
+    description: 'Três bolinhas na tela. Acertou uma, nasce outra.',
     create: (options) => new Gridshot(options),
   };
 })();

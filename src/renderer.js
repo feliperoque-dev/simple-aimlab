@@ -3,9 +3,10 @@
   const Aim = (window.Aim = window.Aim || {});
 
   const NEAR = 0.05;
-  const TARGET_COLORS = ['#c9fff3', '#22d3b0', '#0b7f6a'];
-  const HOT_COLORS = ['#fff3c9', '#ffb020', '#b85c00']; // mira em cima (modo seguir)
   const ROOM = { halfWidth: 6, halfHeight: 3, halfDepth: 8 };
+  const TARGET_COLORS = ['#c9fff3', '#22d3b0', '#0b7f6a'];
+  const HOT_COLORS = ['#fff3c9', '#ffb020', '#b85c00']; // pontuando (treinos de seguir)
+  const MISS_COLOR = '#ff5c5c';
 
   // Linhas da grade nas 6 faces da sala: [ax, ay, az, bx, by, bz].
   function buildRoom() {
@@ -34,6 +35,24 @@
     p.z = NEAR;
   }
 
+  // Mira no estilo dos jogos: 4 traços com abertura no meio e ponto opcional.
+  // crosshair = { color, length, thickness, gap, dot }, medidas em pixels × scale.
+  Aim.drawCrosshair = function (ctx, cx, cy, crosshair, scale) {
+    const len = crosshair.length * scale;
+    const th = crosshair.thickness * scale;
+    const gap = crosshair.gap * scale;
+    const x = Math.round(cx - th / 2);
+    const y = Math.round(cy - th / 2);
+    ctx.fillStyle = crosshair.color;
+    if (len > 0) {
+      ctx.fillRect(x - gap - len, y, len, th);
+      ctx.fillRect(x + th + gap, y, len, th);
+      ctx.fillRect(x, y - gap - len, th, len);
+      ctx.fillRect(x, y + th + gap, th, len);
+    }
+    if (crosshair.dot || len <= 0) ctx.fillRect(x, y, th, th);
+  };
+
   class Renderer {
     constructor(canvas, camera) {
       this.canvas = canvas;
@@ -52,16 +71,25 @@
       this.camera.setViewport(this.canvas.width, this.canvas.height, hfov);
     }
 
-    draw(mode, now, crosshairColor) {
-      const { ctx, canvas } = this;
+    draw(mode, now, crosshair) {
+      const { ctx, canvas, camera } = this;
       ctx.fillStyle = '#0d1117';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       this._drawRoom();
-      if (mode) {
-        this._drawTargets(mode);
-        this._drawEffects(mode, now);
-      }
-      this._drawCrosshair(crosshairColor);
+      this._drawTargets(mode);
+      this._drawEffects(mode, now);
+      Aim.drawCrosshair(ctx, camera.cx, camera.cy, crosshair, this.dpr);
+      if (now - mode.lastHitAt < Aim.HITMARKER_MS) this._drawHitmarker(crosshair);
+    }
+
+    // Projeta um ponto do mundo na tela. Retorna false se estiver atrás da câmera.
+    _project(x, y, z, out) {
+      const { camera } = this;
+      camera.toCamera(x, y, z, out);
+      if (out.z < NEAR) return false;
+      out.x = camera.cx + (out.x / out.z) * camera.focal;
+      out.y = camera.cy - (out.y / out.z) * camera.focal;
+      return true;
     }
 
     _drawRoom() {
@@ -85,60 +113,61 @@
     _drawTargets(mode) {
       const { ctx, camera, _a: p } = this;
       for (const t of mode.targets) {
-        camera.toCamera(t.x, t.y, t.z, p);
-        if (p.z < NEAR + mode.radius) continue;
-        const sx = camera.cx + (p.x / p.z) * camera.focal;
-        const sy = camera.cy - (p.y / p.z) * camera.focal;
+        if (!this._project(t.x, t.y, t.z, p)) continue;
         const r = (mode.radius / p.z) * camera.focal;
-        const g = ctx.createRadialGradient(sx - r * 0.35, sy - r * 0.35, r * 0.05, sx, sy, r);
+        const g = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.35, r * 0.05, p.x, p.y, r);
         const colors = t.hot ? HOT_COLORS : TARGET_COLORS;
         g.addColorStop(0, colors[0]);
         g.addColorStop(0.45, colors[1]);
         g.addColorStop(1, colors[2]);
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    // Anel que se expande onde o alvo foi destruído.
+    // Acerto: anel que se expande onde o alvo estava.
+    // Erro: um X vermelho onde o tiro passou, que some aos poucos.
     _drawEffects(mode, now) {
-      const { ctx, camera, _a: p } = this;
+      const { ctx, camera, dpr, _a: p } = this;
       for (const e of mode.effects) {
-        const k = (now - e.t0) / mode.effectMs;
-        if (k < 0 || k > 1) continue;
-        camera.toCamera(e.x, e.y, e.z, p);
-        if (p.z < NEAR) continue;
-        const sx = camera.cx + (p.x / p.z) * camera.focal;
-        const sy = camera.cy - (p.y / p.z) * camera.focal;
-        const r = ((mode.radius * (1 + k * 0.8)) / p.z) * camera.focal;
+        const k = (now - e.t0) / Aim.EFFECT_MS[e.kind];
+        if (k < 0 || k > 1 || !this._project(e.x, e.y, e.z, p)) continue;
         ctx.globalAlpha = 1 - k;
-        ctx.strokeStyle = '#c9fff3';
-        ctx.lineWidth = 3 * this.dpr;
         ctx.beginPath();
-        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        if (e.kind === 'hit') {
+          const r = ((mode.radius * (1 + k * 0.8)) / p.z) * camera.focal;
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.strokeStyle = TARGET_COLORS[0];
+          ctx.lineWidth = 3 * dpr;
+        } else {
+          const s = 5 * dpr;
+          ctx.moveTo(p.x - s, p.y - s);
+          ctx.lineTo(p.x + s, p.y + s);
+          ctx.moveTo(p.x + s, p.y - s);
+          ctx.lineTo(p.x - s, p.y + s);
+          ctx.strokeStyle = MISS_COLOR;
+          ctx.lineWidth = 2 * dpr;
+        }
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
     }
 
-    _drawCrosshair(color) {
+    // Quatro traços diagonais em volta da mira logo após um acerto.
+    _drawHitmarker(crosshair) {
       const { ctx, dpr } = this;
       const { cx, cy } = this.camera;
-      const gap = 3 * dpr;
-      const len = 6 * dpr;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2 * dpr;
+      const inner = (crosshair.gap + crosshair.length + 4) * dpr * 0.75;
+      const outer = inner + 7 * dpr;
       ctx.beginPath();
-      ctx.moveTo(cx - gap - len, cy);
-      ctx.lineTo(cx - gap, cy);
-      ctx.moveTo(cx + gap, cy);
-      ctx.lineTo(cx + gap + len, cy);
-      ctx.moveTo(cx, cy - gap - len);
-      ctx.lineTo(cx, cy - gap);
-      ctx.moveTo(cx, cy + gap);
-      ctx.lineTo(cx, cy + gap + len);
+      for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        ctx.moveTo(cx + dx * inner, cy + dy * inner);
+        ctx.lineTo(cx + dx * outer, cy + dy * outer);
+      }
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2 * dpr;
       ctx.stroke();
     }
   }

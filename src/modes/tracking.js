@@ -1,61 +1,70 @@
-// Modo "seguir o alvo": uma bolinha se move sem parar (inclusive para perto e
-// para longe) e você pontua enquanto a mira estiver em cima dela. Sem clique.
+// Treinos de seguir: uma bolinha se move sem parar e você pontua enquanto a
+// mira estiver em cima dela. Dois padrões de movimento:
+//   float  — flutua em curvas suaves, inclusive para perto e para longe;
+//   strafe — anda só para os lados na altura da cabeça, com trocas secas de
+//            direção e paradas curtas, como um inimigo fazendo ADAD.
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
-  // Área em que o alvo pode andar (metros, câmera na origem).
-  const BOUNDS = { x: 2.4, y: 1.5, zMin: 5.5, zMax: 7.5 };
-  const MIN_SPEED = 1.2; // m/s
-  const MAX_SPEED = 2.6;
-  const DEPTH_SPEED = 0.8; // m/s máximo para perto/longe
-  const STEERING = 6; // quão rápido a velocidade atual chega na desejada
-  const MIN_TURN_S = 0.5; // intervalo entre trocas de direção
-  const MAX_TURN_S = 1.5;
   const POINTS_PER_SECOND = 100;
-
-  const tmp = { x: 0, y: 0, z: 0 };
   const rand = (min, max) => min + Math.random() * (max - min);
 
-  class Tracking {
-    constructor({ radius, duration }) {
-      this.radius = radius;
-      this.duration = duration; // segundos
-      // hot = mira em cima do alvo (o renderer pinta de outra cor).
-      this.targets = [{ x: 0, y: 0, z: 6.5, hot: false }];
-      this.effects = [];
-      this.effectMs = 0;
-      this.elapsed = 0;
-      this.onTarget = 0; // segundos com a mira no alvo
-      this.finished = false;
-      this.startTime = 0;
-      this.lastTime = 0;
+  const PATTERNS = {
+    float: {
+      bounds: { x: 2.4, y: 1.5, zMin: 5.5, zMax: 7.5 },
+      steering: 6, // quão rápido a velocidade atual chega na desejada
+      turnEvery: [0.5, 1.5], // segundos entre trocas de direção
+      pickDirection(wish, speed) {
+        const angle = rand(0, Math.PI * 2);
+        const v = rand(1.2, 2.6) * speed;
+        wish.x = Math.cos(angle) * v;
+        wish.y = Math.sin(angle) * v * 0.7;
+        wish.z = rand(-0.8, 0.8) * speed;
+        return rand(...this.turnEvery);
+      },
+    },
+    strafe: {
+      bounds: { x: 3, y: 0, zMin: 6.5, zMax: 6.5 },
+      steering: 30, // quase instantâneo: troca seca
+      turnEvery: [0.25, 1.1],
+      pickDirection(wish, speed) {
+        // Às vezes para por um instante, como quem dá counter-strafe para atirar.
+        if (wish.x !== 0 && Math.random() < 0.15) {
+          wish.x = 0;
+          return rand(0.15, 0.35);
+        }
+        const direction = wish.x > 0 ? -1 : wish.x < 0 ? 1 : Math.random() < 0.5 ? -1 : 1;
+        wish.x = direction * 2.2 * speed;
+        return rand(...this.turnEvery);
+      },
+    },
+  };
+
+  const tmp = { x: 0, y: 0, z: 0 };
+
+  class Tracking extends Aim.Mode {
+    constructor({ radius, duration, speed, holdToTrack }, pattern) {
+      super({ radius, duration });
+      this.pattern = PATTERNS[pattern];
+      this.speed = speed;
+      this.holdToTrack = holdToTrack;
+      // hot = está pontuando agora (o renderer pinta de outra cor).
+      this.targets.push({ x: 0, y: 0, z: 6.5, hot: false });
+      this.onTarget = 0; // segundos pontuando
       this.vel = { x: 0, y: 0, z: 0 };
       this.wish = { x: 0, y: 0, z: 0 };
       this.turnIn = 0;
     }
 
-    start(now) {
-      this.startTime = now;
-      this.lastTime = now;
-    }
-
-    update(now, camera) {
-      const dt = Math.min((now - this.lastTime) / 1000, 0.05);
-      this.lastTime = now;
-      this.elapsed = Math.min((now - this.startTime) / 1000, this.duration);
-      if (this.elapsed >= this.duration) this.finished = true;
-
+    update(now, camera, firing) {
+      const dt = this.tick(now);
       this._move(dt);
 
       const t = this.targets[0];
       camera.toCamera(t.x, t.y, t.z, tmp);
-      t.hot = tmp.z > 0 && tmp.x * tmp.x + tmp.y * tmp.y <= this.radius * this.radius;
+      const aimed = tmp.z > 0 && tmp.x * tmp.x + tmp.y * tmp.y <= this.radius * this.radius;
+      t.hot = aimed && (firing || !this.holdToTrack);
       if (t.hot) this.onTarget += dt;
-    }
-
-    // Este modo não usa clique.
-    shoot() {
-      return null;
     }
 
     get score() {
@@ -74,21 +83,15 @@
     }
 
     _move(dt) {
-      const { vel, wish } = this;
+      const { vel, wish, pattern } = this;
+      const { bounds } = pattern;
       const t = this.targets[0];
 
       this.turnIn -= dt;
-      if (this.turnIn <= 0) {
-        const angle = rand(0, Math.PI * 2);
-        const speed = rand(MIN_SPEED, MAX_SPEED);
-        wish.x = Math.cos(angle) * speed;
-        wish.y = Math.sin(angle) * speed * 0.7; // movimento mais horizontal, como um inimigo
-        wish.z = rand(-DEPTH_SPEED, DEPTH_SPEED);
-        this.turnIn = rand(MIN_TURN_S, MAX_TURN_S);
-      }
+      if (this.turnIn <= 0) this.turnIn = pattern.pickDirection(wish, this.speed);
 
-      // Curva suave: a velocidade persegue a desejada em vez de trocar de uma vez.
-      const k = Math.min(1, STEERING * dt);
+      // A velocidade persegue a desejada em vez de trocar de uma vez.
+      const k = Math.min(1, pattern.steering * dt);
       vel.x += (wish.x - vel.x) * k;
       vel.y += (wish.y - vel.y) * k;
       vel.z += (wish.z - vel.z) * k;
@@ -97,9 +100,9 @@
       t.y += vel.y * dt;
       t.z += vel.z * dt;
 
-      this._bounce(t, 'x', -BOUNDS.x, BOUNDS.x);
-      this._bounce(t, 'y', -BOUNDS.y, BOUNDS.y);
-      this._bounce(t, 'z', BOUNDS.zMin, BOUNDS.zMax);
+      this._bounce(t, 'x', -bounds.x, bounds.x);
+      this._bounce(t, 'y', -bounds.y, bounds.y);
+      this._bounce(t, 'z', bounds.zMin, bounds.zMax);
     }
 
     // Bateu no limite: volta para dentro e inverte o sentido naquele eixo.
@@ -118,7 +121,13 @@
 
   Aim.MODES.tracking = {
     label: 'Seguir o alvo',
-    description: 'Mantenha a mira em cima da bolinha em movimento. Não precisa clicar.',
-    create: (options) => new Tracking(options),
+    description: 'Mantenha a mira na bolinha que flutua em curvas suaves.',
+    create: (options) => new Tracking(options, 'float'),
+  };
+
+  Aim.MODES.strafe = {
+    label: 'Seguir strafe',
+    description: 'O alvo anda de um lado para o outro e troca de direção de repente.',
+    create: (options) => new Tracking(options, 'strafe'),
   };
 })();

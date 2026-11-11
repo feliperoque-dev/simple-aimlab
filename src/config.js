@@ -1,4 +1,4 @@
-// Constantes dos jogos e configurações salvas no navegador.
+// Constantes dos jogos e tudo que fica salvo no navegador.
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
@@ -9,36 +9,44 @@
     cs2: { label: 'CS2', yaw: 0.022, hfov: 106.26 },
   };
 
-  // Modos de treino. Cada arquivo em src/modes/ se registra aqui com
-  // { label, description, create({ radius, duration }) }.
+  // Treinos. Cada arquivo em src/modes/ se registra aqui com
+  // { label, description, create({ radius, speed, duration, holdToTrack }) }.
   Aim.MODES = {};
 
-  // Raio do alvo em metros (os alvos ficam entre 5,5 m e 7,5 m da câmera).
-  Aim.TARGET_SIZES = {
-    small: { label: 'Pequeno', radius: 0.18 },
-    medium: { label: 'Médio', radius: 0.26 },
-    large: { label: 'Grande', radius: 0.34 },
+  // radius  = raio do alvo em metros (alvos ficam entre 5,5 m e 7,5 m da câmera).
+  // speed   = multiplicador de velocidade dos alvos que se movem.
+  // recordId mantém os recordes salvos antes de existir "dificuldade".
+  Aim.DIFFICULTIES = {
+    easy: { label: 'Fácil', radius: 0.34, speed: 0.75, recordId: 'large' },
+    medium: { label: 'Médio', radius: 0.26, speed: 1, recordId: 'medium' },
+    hard: { label: 'Difícil', radius: 0.18, speed: 1.3, recordId: 'small' },
   };
+
+  Aim.DURATIONS = [30, 60, 120];
 
   const SETTINGS_KEY = 'simple-aimlab:settings';
   const BEST_KEY = 'simple-aimlab:best';
+  const HISTORY_KEY = 'simple-aimlab:history';
+  const HISTORY_LIMIT = 400;
 
   const DEFAULTS = {
     mode: 'gridshot',
+    difficulty: 'medium',
+    duration: 60,
     game: 'valorant',
     sens: { valorant: 0.35, cs2: 1.6 },
     dpi: 800,
-    size: 'medium',
-    duration: 60,
-    crosshair: '#00ff88',
+    // Medidas da mira em pixels de tela.
+    crosshair: { color: '#00ff88', length: 6, thickness: 2, gap: 3, dot: false },
     sound: true,
+    holdToTrack: false, // treinos de seguir só pontuam com o clique pressionado
   };
 
-  function read(key) {
+  function read(key, fallback) {
     try {
-      return JSON.parse(localStorage.getItem(key)) || {};
+      return JSON.parse(localStorage.getItem(key)) || fallback;
     } catch {
-      return {};
+      return fallback;
     }
   }
 
@@ -51,8 +59,24 @@
   }
 
   Aim.loadSettings = function () {
-    const saved = read(SETTINGS_KEY);
-    return { ...DEFAULTS, ...saved, sens: { ...DEFAULTS.sens, ...saved.sens } };
+    const saved = read(SETTINGS_KEY, {});
+    // Formatos antigos: mira era só a cor; dificuldade era "tamanho do alvo".
+    if (typeof saved.crosshair === 'string') saved.crosshair = { color: saved.crosshair };
+    if (saved.size && !saved.difficulty) {
+      saved.difficulty = { large: 'easy', medium: 'medium', small: 'hard' }[saved.size];
+    }
+    delete saved.size;
+
+    const settings = {
+      ...DEFAULTS,
+      ...saved,
+      sens: { ...DEFAULTS.sens, ...saved.sens },
+      crosshair: { ...DEFAULTS.crosshair, ...saved.crosshair },
+    };
+    if (!Aim.GAMES[settings.game]) settings.game = DEFAULTS.game;
+    if (!Aim.DIFFICULTIES[settings.difficulty]) settings.difficulty = DEFAULTS.difficulty;
+    if (!Aim.DURATIONS.includes(settings.duration)) settings.duration = DEFAULTS.duration;
+    return settings;
   };
 
   Aim.saveSettings = function (settings) {
@@ -64,20 +88,36 @@
     return (360 / (Aim.GAMES[game].yaw * sens * dpi)) * 2.54;
   };
 
-  function bestId(s) {
-    return `${s.mode}:${s.game}:${s.size}:${s.duration}`;
+  // Recordes e histórico são separados por treino + jogo + dificuldade + duração.
+  function runId(s) {
+    return `${s.mode}:${s.game}:${Aim.DIFFICULTIES[s.difficulty].recordId}:${s.duration}`;
   }
 
   Aim.getBest = function (settings) {
-    return read(BEST_KEY)[bestId(settings)] || 0;
+    return read(BEST_KEY, {})[runId(settings)] || 0;
   };
 
-  // Salva o recorde se for maior; retorna true quando é recorde novo.
-  Aim.submitScore = function (settings, score) {
-    const all = read(BEST_KEY);
-    if (score <= (all[bestId(settings)] || 0)) return false;
-    all[bestId(settings)] = score;
-    write(BEST_KEY, all);
+  // Guarda a partida no histórico e atualiza o recorde.
+  // Retorna true quando é recorde novo.
+  Aim.saveRun = function (settings, score, accuracy) {
+    const id = runId(settings);
+
+    const history = read(HISTORY_KEY, []);
+    history.push({ id, t: Date.now(), score, acc: accuracy });
+    write(HISTORY_KEY, history.slice(-HISTORY_LIMIT));
+
+    const bests = read(BEST_KEY, {});
+    if (score <= (bests[id] || 0)) return false;
+    bests[id] = score;
+    write(BEST_KEY, bests);
     return true;
+  };
+
+  // Últimas partidas (mais antiga primeiro) na configuração atual.
+  Aim.getRuns = function (settings, count) {
+    const id = runId(settings);
+    return read(HISTORY_KEY, [])
+      .filter((run) => run.id === id)
+      .slice(-count);
   };
 })();
