@@ -9,7 +9,11 @@
     cs2: { label: 'CS2', yaw: 0.022, hfov: 106.26 },
   };
 
-  // Raio do alvo em metros (os alvos ficam a 6,5 m da câmera).
+  // Modos de treino. Cada arquivo em src/modes/ se registra aqui com
+  // { label, description, create({ radius, duration }) }.
+  Aim.MODES = {};
+
+  // Raio do alvo em metros (os alvos ficam entre 5,5 m e 7,5 m da câmera).
   Aim.TARGET_SIZES = {
     small: { label: 'Pequeno', radius: 0.18 },
     medium: { label: 'Médio', radius: 0.26 },
@@ -20,6 +24,7 @@
   const BEST_KEY = 'simple-aimlab:best';
 
   const DEFAULTS = {
+    mode: 'gridshot',
     game: 'valorant',
     sens: { valorant: 0.35, cs2: 1.6 },
     dpi: 800,
@@ -60,7 +65,7 @@
   };
 
   function bestId(s) {
-    return `gridshot:${s.game}:${s.size}:${s.duration}`;
+    return `${s.mode}:${s.game}:${s.size}:${s.duration}`;
   }
 
   Aim.getBest = function (settings) {

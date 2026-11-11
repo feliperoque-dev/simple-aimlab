@@ -19,9 +19,10 @@
 
   <section id="menu" class="panel">
     <h1>Simple Aim Lab</h1>
-    <p class="subtitle">3 alvos na tela. Acertou um, nasce outro. Faça o máximo de pontos.</p>
+    <p id="mode-description" class="subtitle"></p>
 
     <div class="fields">
+      <label>Treino <select id="mode"></select></label>
       <label>Jogo <select id="game"></select></label>
       <label>Sensibilidade <input id="sens" type="number" min="0.001" step="0.001"></label>
       <label>DPI do mouse <input id="dpi" type="number" min="50" step="50"></label>
@@ -34,19 +35,14 @@
 
     <button id="play" class="primary">Jogar</button>
     <p class="hint">Recorde nesta configuração: <b id="best">0</b></p>
-    <p class="hint">Clique esquerdo atira · Esc cancela · F11 para tela cheia</p>
+    <p class="hint">Esc cancela · F11 para tela cheia</p>
     <p id="menu-msg" class="message"></p>
   </section>
 
   <section id="results" class="panel" hidden>
     <h1>Resultado</h1>
-    <dl>
-      <dt>Pontos</dt><dd id="r-score"></dd>
-      <dt>Acertos / tiros</dt><dd id="r-hits"></dd>
-      <dt>Precisão</dt><dd id="r-acc"></dd>
-      <dt>Tempo médio por alvo</dt><dd id="r-avg"></dd>
-      <dt>Recorde</dt><dd id="r-best"></dd>
-    </dl>
+    <p id="r-title" class="subtitle"></p>
+    <dl id="r-list"></dl>
     <p id="r-raw" class="message" hidden>
       Seu navegador não liberou o mouse sem aceleração: a sensibilidade pode não bater
       com a do jogo. Use Chrome ou Edge.
@@ -59,6 +55,7 @@
   <script src="src/camera.js"></script>
   <script src="src/renderer.js"></script>
   <script src="src/modes/gridshot.js"></script>
+  <script src="src/modes/tracking.js"></script>
   <script src="src/main.js"></script>
 </body>
 </html>

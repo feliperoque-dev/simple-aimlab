@@ -1,6 +1,6 @@
 // Liga tudo: menu, captura do mouse, loop do treino e tela de resultado.
 (function () {
-  const { GAMES, TARGET_SIZES } = Aim;
+  const { GAMES, MODES, TARGET_SIZES } = Aim;
   const COUNTDOWN_S = 3;
 
   const $ = (id) => document.getElementById(id);
@@ -10,6 +10,8 @@
     results: $('results'),
     hud: $('hud'),
     countdown: $('countdown'),
+    mode: $('mode'),
+    description: $('mode-description'),
     game: $('game'),
     sens: $('sens'),
     dpi: $('dpi'),
@@ -36,7 +38,7 @@
   let audio = null;
 
   function newMode() {
-    return new Aim.Gridshot({
+    return MODES[settings.mode].create({
       radius: TARGET_SIZES[settings.size].radius,
       duration: settings.duration,
     });
@@ -53,6 +55,8 @@
   }
 
   function syncMenu() {
+    ui.mode.value = settings.mode;
+    ui.description.textContent = MODES[settings.mode].description;
     ui.game.value = settings.game;
     ui.sens.value = settings.sens[settings.game];
     ui.dpi.value = settings.dpi;
@@ -75,6 +79,7 @@
     } else {
       settings.sens[settings.game] = positive(ui.sens, settings.sens[settings.game]);
     }
+    settings.mode = ui.mode.value;
     settings.dpi = positive(ui.dpi, settings.dpi);
     settings.size = ui.size.value;
     settings.duration = Number(ui.duration.value);
@@ -157,7 +162,7 @@
     }
 
     if (state === 'playing') {
-      mode.update(now);
+      mode.update(now, camera);
       if (mode.finished) {
         finishRun();
         return;
@@ -180,11 +185,21 @@
     state = 'results';
     document.exitPointerLock();
     const isRecord = Aim.submitScore(settings, mode.score);
-    $('r-score').textContent = mode.score;
-    $('r-hits').textContent = `${mode.hits} / ${mode.shots}`;
-    $('r-acc').textContent = `${(mode.accuracy * 100).toFixed(1)}%`;
-    $('r-avg').textContent = mode.hits ? `${Math.round(mode.avgKillMs)} ms` : '—';
-    $('r-best').textContent = Aim.getBest(settings) + (isRecord ? '  ★ novo recorde!' : '');
+    const rows = [
+      ['Pontos', mode.score],
+      ...mode.results(),
+      ['Recorde', Aim.getBest(settings) + (isRecord ? '  ★ novo recorde!' : '')],
+    ];
+    const list = $('r-list');
+    list.replaceChildren();
+    for (const [label, value] of rows) {
+      const dt = document.createElement('dt');
+      const dd = document.createElement('dd');
+      dt.textContent = label;
+      dd.textContent = value;
+      list.append(dt, dd);
+    }
+    $('r-title').textContent = MODES[settings.mode].label;
     $('r-raw').hidden = rawInput;
     show('results');
     renderer.draw(mode, performance.now(), settings.crosshair);
@@ -216,8 +231,9 @@
 
   document.addEventListener('mousedown', (e) => {
     if (state !== 'playing' || e.button !== 0) return;
-    if (mode.shoot(camera, performance.now())) blip(880, 0.07, 0.12);
-    else blip(180, 0.05, 0.06);
+    const hit = mode.shoot(camera, performance.now()); // null = modo sem clique
+    if (hit === true) blip(880, 0.07, 0.12);
+    else if (hit === false) blip(180, 0.05, 0.06);
   });
 
   document.addEventListener('pointerlockchange', onPointerLockChange);
@@ -236,6 +252,8 @@
 
   // ---------- Início ----------
 
+  if (!MODES[settings.mode]) settings.mode = 'gridshot';
+  fillSelect(ui.mode, Object.entries(MODES).map(([id, m]) => [id, m.label]));
   fillSelect(ui.game, Object.entries(GAMES).map(([id, g]) => [id, g.label]));
   fillSelect(ui.size, Object.entries(TARGET_SIZES).map(([id, s]) => [id, s.label]));
   fillSelect(ui.duration, [[30, '30 s'], [60, '60 s'], [120, '120 s']]);

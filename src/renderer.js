@@ -3,6 +3,8 @@
   const Aim = (window.Aim = window.Aim || {});
 
   const NEAR = 0.05;
+  const TARGET_COLORS = ['#c9fff3', '#22d3b0', '#0b7f6a'];
+  const HOT_COLORS = ['#fff3c9', '#ffb020', '#b85c00']; // mira em cima (modo seguir)
   const ROOM = { halfWidth: 6, halfHeight: 3, halfDepth: 8 };
 
   // Linhas da grade nas 6 faces da sala: [ax, ay, az, bx, by, bz].
@@ -89,9 +91,10 @@
         const sy = camera.cy - (p.y / p.z) * camera.focal;
         const r = (mode.radius / p.z) * camera.focal;
         const g = ctx.createRadialGradient(sx - r * 0.35, sy - r * 0.35, r * 0.05, sx, sy, r);
-        g.addColorStop(0, '#c9fff3');
-        g.addColorStop(0.45, '#22d3b0');
-        g.addColorStop(1, '#0b7f6a');
+        const colors = t.hot ? HOT_COLORS : TARGET_COLORS;
+        g.addColorStop(0, colors[0]);
+        g.addColorStop(0.45, colors[1]);
+        g.addColorStop(1, colors[2]);
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(sx, sy, r, 0, Math.PI * 2);

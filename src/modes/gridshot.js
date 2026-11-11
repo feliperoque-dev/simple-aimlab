@@ -6,7 +6,9 @@
   const COLS = 5;
   const ROWS = 5;
   const SPACING = 0.9; // metros entre centros
-  const DISTANCE = 6.5; // metros da câmera
+  const DISTANCE = 6.5; // metros da câmera (distância de referência da grade)
+  const MIN_DISTANCE = 5.5;
+  const MAX_DISTANCE = 7.5;
   const TARGET_COUNT = 3;
   const HIT_POINTS = 100;
   const MISS_PENALTY = 50;
@@ -81,14 +83,31 @@
       do {
         cell = Math.floor(Math.random() * COLS * ROWS);
       } while (cell === excludeCell || this.targets.some((t) => t.cell === cell));
+      // Cada alvo nasce um pouco mais perto ou mais longe. x/y acompanham a
+      // profundidade para o alvo continuar na mesma posição da grade na tela.
+      const z = MIN_DISTANCE + Math.random() * (MAX_DISTANCE - MIN_DISTANCE);
+      const scale = z / DISTANCE;
       return {
         cell,
-        x: ((cell % COLS) - (COLS - 1) / 2) * SPACING,
-        y: (Math.floor(cell / COLS) - (ROWS - 1) / 2) * SPACING,
-        z: DISTANCE,
+        x: ((cell % COLS) - (COLS - 1) / 2) * SPACING * scale,
+        y: (Math.floor(cell / COLS) - (ROWS - 1) / 2) * SPACING * scale,
+        z,
       };
+    }
+
+    // Linhas da tela de resultado.
+    results() {
+      return [
+        ['Acertos / tiros', `${this.hits} / ${this.shots}`],
+        ['Precisão', `${(this.accuracy * 100).toFixed(1)}%`],
+        ['Tempo médio por alvo', this.hits ? `${Math.round(this.avgKillMs)} ms` : '—'],
+      ];
     }
   }
 
-  Aim.Gridshot = Gridshot;
+  Aim.MODES.gridshot = {
+    label: '3 alvos (clicar)',
+    description: '3 alvos na tela. Acertou um, nasce outro. Clique esquerdo atira.',
+    create: (options) => new Gridshot(options),
+  };
 })();

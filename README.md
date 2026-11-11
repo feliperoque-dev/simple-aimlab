@@ -3,7 +3,13 @@
 Treino de mira leve para quem joga **Valorant** e **CS2**. Roda no navegador,
 pesa alguns kilobytes, não instala nada e não usa CPU/GPU enquanto você está no menu.
 
-Por enquanto tem um único modo: **3 alvos** numa grade 5×5 — acertou um, nasce outro.
+Dois treinos:
+
+- **3 alvos (clicar):** três bolinhas numa grade 5×5 — acertou uma, nasce outra. Cada
+  uma nasce um pouco mais perto ou mais longe, então o tamanho na tela varia.
+- **Seguir o alvo:** uma bolinha se move sem parar (para os lados, para cima e também
+  para perto e para longe). Você pontua enquanto a mira estiver em cima dela, sem clicar;
+  ela fica laranja quando você está acertando.
 
 ## Como testar
 
@@ -12,7 +18,7 @@ Por enquanto tem um único modo: **3 alvos** numa grade 5×5 — acertou um, nas
    git clone https://github.com/feliperoque-dev/simple-aimlab.git
    ```
 2. Abra o arquivo `index.html` no **Chrome** ou **Edge** (dois cliques no arquivo já funciona).
-3. Escolha o jogo, coloque a mesma sensibilidade que você usa nele e clique em **Jogar**.
+3. Escolha o treino e o jogo, coloque a mesma sensibilidade que você usa nele e clique em **Jogar**.
 
 Não precisa de Node, servidor nem build.
 
@@ -20,7 +26,7 @@ Não precisa de Node, servidor nem build.
 
 | Ação | Tecla |
 | --- | --- |
-| Atirar | Clique esquerdo |
+| Atirar (treino de 3 alvos) | Clique esquerdo |
 | Cancelar o treino | Esc |
 | Tela cheia | F11 |
 
@@ -42,9 +48,9 @@ no Windows suportam isso; se o navegador não suportar, a tela de resultado avis
 
 ## Pontuação
 
-- Acerto: **+100**
-- Erro: **−50**
-- O recorde fica salvo no navegador, separado por jogo, tamanho de alvo e duração.
+- **3 alvos:** acerto **+100**, erro **−50**.
+- **Seguir o alvo:** **100 pontos por segundo** com a mira em cima da bolinha.
+- O recorde fica salvo no navegador, separado por treino, jogo, tamanho de alvo e duração.
 
 ## Estrutura
 
@@ -54,8 +60,10 @@ css/style.css         visual
 src/config.js         dados dos jogos e configurações salvas
 src/camera.js         câmera em primeira pessoa e conversão de sensibilidade
 src/renderer.js       desenho da sala, alvos e mira (canvas 2D)
-src/modes/gridshot.js regras do modo de 3 alvos
+src/modes/gridshot.js regras do treino de 3 alvos
+src/modes/tracking.js regras do treino de seguir o alvo
 src/main.js           menu, captura do mouse e loop do treino
 ```
 
-Sem dependências: é HTML, CSS e JavaScript puro. Novos modos de treino entram em `src/modes/`.
+Sem dependências: é HTML, CSS e JavaScript puro. Para criar um treino novo, adicione um arquivo em `src/modes/` que se registre em
+`Aim.MODES` (veja os dois existentes) e inclua o `<script>` no `index.html`.
