@@ -1,6 +1,6 @@
 // Liga tudo: menu, configurações, captura do mouse, loop do treino e resultado.
 (function () {
-  const { GAMES, MODES, DIFFICULTIES, DURATIONS } = Aim;
+  const { GAMES, MODES, DIFFICULTIES, DURATIONS, MOVEMENTS } = Aim;
   const COUNTDOWN_S = 3;
   const CHART_RUNS = 20;
 
@@ -13,6 +13,8 @@
     modeCards: $('mode-cards'),
     difficulty: $('difficulty'),
     duration: $('duration'),
+    movement: $('movement'),
+    movementBox: $('movement-box'),
     best: $('best'),
     menuChart: $('menu-chart'),
     message: $('menu-msg'),
@@ -57,6 +59,7 @@
       speed: difficulty.speed,
       duration: settings.duration,
       holdToTrack: settings.holdToTrack,
+      movement: settings.movement,
     });
   }
 
@@ -104,6 +107,8 @@
     markChoice(ui.modeCards, settings.mode);
     markChoice(ui.difficulty, settings.difficulty);
     markChoice(ui.duration, settings.duration);
+    markChoice(ui.movement, settings.movement);
+    ui.movementBox.hidden = settings.mode !== 'tracking';
     ui.best.textContent = Aim.getBest(settings);
     renderChart(ui.menuChart, Aim.getRuns(settings, CHART_RUNS), false);
     const sens = settings.sens[settings.game];
@@ -314,7 +319,8 @@
       list.append(dt, dd);
     }
     const difficulty = DIFFICULTIES[settings.difficulty].label;
-    $('r-title').textContent = `${MODES[settings.mode].label} · ${difficulty} · ${settings.duration} s`;
+    const movement = settings.mode === 'tracking' ? ` · ${MOVEMENTS[settings.movement].label}` : '';
+    $('r-title').textContent = `${MODES[settings.mode].label}${movement} · ${difficulty} · ${settings.duration} s`;
     $('r-raw').hidden = rawInput;
     renderChart($('r-chart'), Aim.getRuns(settings, CHART_RUNS), true);
 
@@ -389,6 +395,7 @@
 
   buildChoices(ui.modeCards, 'mode', Object.entries(MODES).map(([id, m]) => [id, m.label, m.description]));
   buildChoices(ui.difficulty, 'difficulty', Object.entries(DIFFICULTIES).map(([id, d]) => [id, d.label]));
+  buildChoices(ui.movement, 'movement', Object.entries(MOVEMENTS).map(([id, m]) => [id, m.label]));
   buildChoices(ui.duration, 'duration', DURATIONS.map((seconds) => [seconds, `${seconds} s`]));
   fillSettingsForm();
   syncSettings();

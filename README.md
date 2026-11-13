@@ -7,12 +7,15 @@ Quatro treinos:
 
 - **3 alvos:** três bolinhas numa grade 5×5 — acertou uma, nasce outra. Cada uma nasce
   um pouco mais perto ou mais longe, então o tamanho na tela varia.
-- **Flick de cabeça:** um alvo pequeno por vez, sempre na altura da cabeça e longe de
-  onde a mira está. Mostra quantos alvos você acertou no primeiro tiro.
-- **Seguir o alvo:** uma bolinha flutua em curvas suaves (para os lados, para cima e
-  também para perto e para longe). Você pontua enquanto a mira estiver em cima dela.
-- **Seguir strafe:** o alvo anda só de um lado para o outro, troca de direção de repente
-  e às vezes para por um instante, como um inimigo fazendo ADAD.
+- **Flick de cabeça:** um alvo pequeno por vez, sempre na altura da cabeça. Entre um alvo
+  e outro, leve a mira ao anel de referência no centro da tela; ao parar nele, o próximo
+  alvo aparece. Mostra quantos alvos você acertou no primeiro tiro.
+- **Chuva de bolinhas:** várias bolinhas pequenas vêm do fundo da sala na sua direção.
+  Acerte antes que passem; as que passam somem sem tirar pontos.
+- **Seguir o alvo:** uma bolinha se move sem parar e você pontua enquanto a mira estiver
+  em cima dela. Dois movimentos, escolhidos no menu: **livre** (curvas suaves, inclusive
+  para perto e para longe) ou **horizontal** (só de um lado para o outro, com trocas
+  secas de direção e paradas curtas, como um inimigo fazendo ADAD).
 
 Nos treinos de seguir a bolinha fica laranja enquanto você está pontuando.
 
@@ -74,9 +77,9 @@ no Windows suportam isso; se o navegador não suportar, a tela de resultado avis
 
 ## Pontuação e evolução
 
-- **3 alvos e Flick de cabeça:** acerto **+100**, erro **−50**.
-- **Seguir o alvo e Seguir strafe:** **100 pontos por segundo** com a mira em cima da bolinha.
-- Um acerto mostra um hitmarker na mira; um erro deixa um X vermelho onde o tiro passou.
+- **3 alvos, Flick de cabeça e Chuva:** acerto **+100**, erro **−50**.
+- **Seguir o alvo:** **100 pontos por segundo** com a mira em cima da bolinha.
+- Acerto e erro só têm aviso sonoro (dá para desligar nas configurações).
 - O recorde e as últimas partidas ficam salvos no navegador, separados por treino, jogo,
   dificuldade e duração. O menu e a tela de resultado mostram um gráfico das últimas 20.
 
@@ -87,11 +90,12 @@ index.html            página única (menu, configurações, HUD e resultado)
 css/style.css         visual
 src/config.js         dados dos jogos, dificuldades e tudo que fica salvo
 src/camera.js         câmera em primeira pessoa e conversão de sensibilidade
-src/renderer.js       desenho da sala, alvos, mira e marcas de acerto/erro
+src/renderer.js       desenho da sala, alvos e mira
 src/modes/base.js     base comum dos treinos (relógio, teste de mira, pontuação)
 src/modes/gridshot.js treino de 3 alvos
 src/modes/flick.js    treino de flick de cabeça
-src/modes/tracking.js treinos de seguir (flutuando e strafe)
+src/modes/rain.js     treino de chuva de bolinhas
+src/modes/tracking.js treino de seguir (movimento livre ou horizontal)
 src/main.js           menu, captura do mouse e loop do treino
 ```
 

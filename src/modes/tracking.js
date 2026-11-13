@@ -1,8 +1,8 @@
-// Treinos de seguir: uma bolinha se move sem parar e você pontua enquanto a
-// mira estiver em cima dela. Dois padrões de movimento:
-//   float  — flutua em curvas suaves, inclusive para perto e para longe;
-//   strafe — anda só para os lados na altura da cabeça, com trocas secas de
-//            direção e paradas curtas, como um inimigo fazendo ADAD.
+// Treino de seguir: uma bolinha se move sem parar e você pontua enquanto a
+// mira estiver em cima dela. Dois movimentos (opção "movement"):
+//   free       — flutua em curvas suaves, inclusive para perto e para longe;
+//   horizontal — anda só para os lados na altura da cabeça, com trocas secas de
+//                direção e paradas curtas, como um inimigo fazendo ADAD.
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
@@ -10,7 +10,7 @@
   const rand = (min, max) => min + Math.random() * (max - min);
 
   const PATTERNS = {
-    float: {
+    free: {
       bounds: { x: 2.4, y: 1.5, zMin: 5.5, zMax: 7.5 },
       steering: 6, // quão rápido a velocidade atual chega na desejada
       turnEvery: [0.5, 1.5], // segundos entre trocas de direção
@@ -23,7 +23,7 @@
         return rand(...this.turnEvery);
       },
     },
-    strafe: {
+    horizontal: {
       bounds: { x: 3, y: 0, zMin: 6.5, zMax: 6.5 },
       steering: 30, // quase instantâneo: troca seca
       turnEvery: [0.25, 1.1],
@@ -43,9 +43,9 @@
   const tmp = { x: 0, y: 0, z: 0 };
 
   class Tracking extends Aim.Mode {
-    constructor({ radius, duration, speed, holdToTrack }, pattern) {
+    constructor({ radius, duration, speed, holdToTrack, movement }) {
       super({ radius, duration });
-      this.pattern = PATTERNS[pattern];
+      this.pattern = PATTERNS[movement] || PATTERNS.free;
       this.speed = speed;
       this.holdToTrack = holdToTrack;
       // hot = está pontuando agora (o renderer pinta de outra cor).
@@ -121,13 +121,7 @@
 
   Aim.MODES.tracking = {
     label: 'Seguir o alvo',
-    description: 'Mantenha a mira na bolinha que flutua em curvas suaves.',
-    create: (options) => new Tracking(options, 'float'),
-  };
-
-  Aim.MODES.strafe = {
-    label: 'Seguir strafe',
-    description: 'O alvo anda de um lado para o outro e troca de direção de repente.',
-    create: (options) => new Tracking(options, 'strafe'),
+    description: 'Mantenha a mira na bolinha. Movimento livre ou só na horizontal (strafe).',
+    create: (options) => new Tracking(options),
   };
 })();

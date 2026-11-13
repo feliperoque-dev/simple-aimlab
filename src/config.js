@@ -24,6 +24,12 @@
 
   Aim.DURATIONS = [30, 60, 120];
 
+  // Movimento do alvo no treino de seguir.
+  Aim.MOVEMENTS = {
+    free: { label: 'Livre' },
+    horizontal: { label: 'Horizontal' },
+  };
+
   const SETTINGS_KEY = 'simple-aimlab:settings';
   const BEST_KEY = 'simple-aimlab:best';
   const HISTORY_KEY = 'simple-aimlab:history';
@@ -33,6 +39,7 @@
     mode: 'gridshot',
     difficulty: 'medium',
     duration: 60,
+    movement: 'free',
     game: 'valorant',
     sens: { valorant: 0.35, cs2: 1.6 },
     dpi: 800,
@@ -66,6 +73,11 @@
       saved.difficulty = { large: 'easy', medium: 'medium', small: 'hard' }[saved.size];
     }
     delete saved.size;
+    // "Seguir strafe" virou "Seguir o alvo" com movimento horizontal.
+    if (saved.mode === 'strafe') {
+      saved.mode = 'tracking';
+      saved.movement = 'horizontal';
+    }
 
     const settings = {
       ...DEFAULTS,
@@ -75,6 +87,7 @@
     };
     if (!Aim.GAMES[settings.game]) settings.game = DEFAULTS.game;
     if (!Aim.DIFFICULTIES[settings.difficulty]) settings.difficulty = DEFAULTS.difficulty;
+    if (!Aim.MOVEMENTS[settings.movement]) settings.movement = DEFAULTS.movement;
     if (!Aim.DURATIONS.includes(settings.duration)) settings.duration = DEFAULTS.duration;
     return settings;
   };
@@ -90,7 +103,9 @@
 
   // Recordes e histórico são separados por treino + jogo + dificuldade + duração.
   function runId(s) {
-    return `${s.mode}:${s.game}:${Aim.DIFFICULTIES[s.difficulty].recordId}:${s.duration}`;
+    // Recordes antigos do strafe ficam sob o id "strafe".
+    const mode = s.mode === 'tracking' && s.movement === 'horizontal' ? 'strafe' : s.mode;
+    return `${mode}:${s.game}:${Aim.DIFFICULTIES[s.difficulty].recordId}:${s.duration}`;
   }
 
   Aim.getBest = function (settings) {

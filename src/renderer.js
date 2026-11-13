@@ -6,7 +6,6 @@
   const ROOM = { halfWidth: 6, halfHeight: 3, halfDepth: 8 };
   const TARGET_COLORS = ['#c9fff3', '#22d3b0', '#0b7f6a'];
   const HOT_COLORS = ['#fff3c9', '#ffb020', '#b85c00']; // pontuando (treinos de seguir)
-  const MISS_COLOR = '#ff5c5c';
 
   // Linhas da grade nas 6 faces da sala: [ax, ay, az, bx, by, bz].
   function buildRoom() {
@@ -77,9 +76,8 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       this._drawRoom();
       this._drawTargets(mode);
-      this._drawEffects(mode, now);
+      if (mode.reference) this._drawReference(mode);
       Aim.drawCrosshair(ctx, camera.cx, camera.cy, crosshair, this.dpr);
-      if (now - mode.lastHitAt < Aim.HITMARKER_MS) this._drawHitmarker(crosshair);
     }
 
     // Projeta um ponto do mundo na tela. Retorna false se estiver atrás da câmera.
@@ -127,46 +125,15 @@
       }
     }
 
-    // Acerto: anel que se expande onde o alvo estava.
-    // Erro: um X vermelho onde o tiro passou, que some aos poucos.
-    _drawEffects(mode, now) {
+    // Anel de referência no centro: leve a mira até ele para o próximo alvo aparecer.
+    _drawReference(mode) {
       const { ctx, camera, dpr, _a: p } = this;
-      for (const e of mode.effects) {
-        const k = (now - e.t0) / Aim.EFFECT_MS[e.kind];
-        if (k < 0 || k > 1 || !this._project(e.x, e.y, e.z, p)) continue;
-        ctx.globalAlpha = 1 - k;
-        ctx.beginPath();
-        if (e.kind === 'hit') {
-          const r = ((mode.radius * (1 + k * 0.8)) / p.z) * camera.focal;
-          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-          ctx.strokeStyle = TARGET_COLORS[0];
-          ctx.lineWidth = 3 * dpr;
-        } else {
-          const s = 5 * dpr;
-          ctx.moveTo(p.x - s, p.y - s);
-          ctx.lineTo(p.x + s, p.y + s);
-          ctx.moveTo(p.x + s, p.y - s);
-          ctx.lineTo(p.x - s, p.y + s);
-          ctx.strokeStyle = MISS_COLOR;
-          ctx.lineWidth = 2 * dpr;
-        }
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    // Quatro traços diagonais em volta da mira logo após um acerto.
-    _drawHitmarker(crosshair) {
-      const { ctx, dpr } = this;
-      const { cx, cy } = this.camera;
-      const inner = (crosshair.gap + crosshair.length + 4) * dpr * 0.75;
-      const outer = inner + 7 * dpr;
+      const { reference } = mode;
+      if (!this._project(reference.x, reference.y, reference.z, p)) return;
+      const r = (mode.refRadius / p.z) * camera.focal;
       ctx.beginPath();
-      for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-        ctx.moveTo(cx + dx * inner, cy + dy * inner);
-        ctx.lineTo(cx + dx * outer, cy + dy * outer);
-      }
-      ctx.strokeStyle = '#ffffff';
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = mode.refReady ? TARGET_COLORS[1] : '#8b98ad';
       ctx.lineWidth = 2 * dpr;
       ctx.stroke();
     }
