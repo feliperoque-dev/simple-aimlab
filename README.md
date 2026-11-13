@@ -3,6 +3,10 @@
 Treino de mira leve para quem joga **Valorant** e **CS2**. Roda no navegador,
 pesa alguns kilobytes, não instala nada e não usa CPU/GPU enquanto você está no menu.
 
+**▶ Jogar agora: https://feliperoque-dev.github.io/simple-aimlab/**
+
+Use Chrome ou Edge no computador (mouse sem aceleração e tela cheia com F11).
+
 Quatro treinos:
 
 - **3 alvos:** três bolinhas numa grade 5×5 — acertou uma, nasce outra. Cada uma nasce
@@ -12,6 +16,8 @@ Quatro treinos:
   alvo aparece. Mostra quantos alvos você acertou no primeiro tiro.
 - **Chuva de bolinhas:** várias bolinhas pequenas vêm do fundo da sala na sua direção.
   Acerte antes que passem; as que passam somem sem tirar pontos.
+  Começa com poucas e devagar; a quantidade e a velocidade crescem até o fim da partida,
+  mais rápido nas dificuldades altas.
 - **Seguir o alvo:** uma bolinha se move sem parar e você pontua enquanto a mira estiver
   em cima dela. Dois movimentos, escolhidos no menu: **livre** (curvas suaves, inclusive
   para perto e para longe) ou **horizontal** (só de um lado para o outro, com trocas
