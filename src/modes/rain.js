@@ -1,7 +1,9 @@
 // Treino "chuva": várias bolinhas pequenas vêm do fundo da sala em direção à
 // tela. Acerte antes que cheguem; as que passam somem sem tirar pontos.
-// Começa com poucas e devagar; a quantidade e a velocidade sobem ao longo da
-// partida até um teto que depende da dificuldade.
+// Começa com poucas e devagar; a quantidade e a velocidade sobem até um teto
+// que depende da dificuldade. Duas formas de jogar:
+//   padrão (duração 0) — sem tempo: acaba quando passam bolinhas demais;
+//   tempo fixo        — dura o tempo escolhido e passar bolinhas não encerra.
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
@@ -9,10 +11,12 @@
   const START_COUNT = 2; // bolinhas no começo da partida
   const MAX_COUNT = 10; // no fim, vezes o multiplicador da dificuldade
   const START_SPEED = 0.6; // fração da velocidade final no começo
-  const SPAWN_Z = 7.5;
+  const SPAWN_Z = 8; // fundo da sala: todas as bolinhas nascem aqui
   const END_Z = 1.2; // passou daqui, a bolinha some
-  const SPREAD_X = 3;
-  const SPREAD_Y = 1.6;
+  const SPREAD_X = 1.7; // área de nascimento, bem mais concentrada
+  const SPREAD_Y = 0.9;
+  const RAMP_S = 90; // no modo padrão, segundos até chegar no teto
+  const LEAK_BUDGET = 12; // bolinhas que podem passar, dividido pela dificuldade
   const BASE_SPEED = 3; // m/s, vezes o multiplicador da dificuldade
 
   const rand = (min, max) => min + Math.random() * (max - min);
@@ -22,23 +26,33 @@
       super({ radius: radius * SMALL, duration });
       this.speed = speed;
       this.maxCount = Math.round(MAX_COUNT * speed);
+      this.maxLeaks = Math.round(LEAK_BUDGET / speed); // fácil 16, médio 12, difícil 9
+      this.leaks = 0;
       for (let i = 0; i < START_COUNT; i++) {
-        // Começam espalhadas em profundidade para não chegarem todas juntas.
-        this.targets.push(this._spawn(rand(END_Z + 1, SPAWN_Z)));
+        this.targets.push(this._spawn(SPAWN_Z));
       }
     }
 
     update(now) {
       const dt = this.tick(now);
-      const progress = this.elapsed / this.duration; // 0 → 1
+      const span = this.duration > 0 ? this.duration : RAMP_S;
+      const progress = Math.min(1, this.elapsed / span); // 0 → 1
       const pace = START_SPEED + (1 - START_SPEED) * progress;
       const wanted = Math.round(START_COUNT + (this.maxCount - START_COUNT) * progress);
       while (this.targets.length < wanted) this.targets.push(this._spawn(SPAWN_Z));
       for (let i = 0; i < this.targets.length; i++) {
         const t = this.targets[i];
         t.z -= t.speed * pace * dt;
-        if (t.z < END_Z) this.targets[i] = this._spawn(SPAWN_Z);
+        if (t.z < END_Z) {
+          this.targets[i] = this._spawn(SPAWN_Z);
+          this.leaks++;
+        }
       }
+      if (this.duration === 0 && this.leaks >= this.maxLeaks) this.finished = true;
+    }
+
+    get livesLeft() {
+      return this.duration === 0 ? Math.max(0, this.maxLeaks - this.leaks) : null;
     }
 
     onKill(index) {
@@ -47,6 +61,8 @@
 
     results() {
       return [
+        ...(this.duration === 0 ? [['Tempo sobrevivido', `${Math.floor(this.elapsed)} s`]] : []),
+        ['Bolinhas que passaram', this.leaks],
         ['Acertos / tiros', `${this.hits} / ${this.shots}`],
         ['Precisão', `${(this.accuracy * 100).toFixed(1)}%`],
         ['Tempo médio por alvo', this.hits ? `${Math.round(this.avgKillMs)} ms` : '—'],
@@ -66,6 +82,7 @@
   Aim.MODES.rain = {
     label: 'Chuva de bolinhas',
     description: 'Várias bolinhas pequenas vindo na sua direção. Acerte antes que passem.',
+    untimed: true, // aceita a duração "Padrão" (sem tempo)
     create: (options) => new Rain(options),
   };
 })();

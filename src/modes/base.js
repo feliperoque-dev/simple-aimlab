@@ -11,7 +11,7 @@
   class Mode {
     constructor({ radius, duration }) {
       this.radius = radius; // metros
-      this.duration = duration; // segundos
+      this.duration = duration; // segundos; 0 = sem limite de tempo
       this.targets = []; // { x, y, z, hot? }
       this.elapsed = 0;
       this.finished = false;
@@ -28,9 +28,17 @@
     tick(now) {
       const dt = Math.min((now - this.lastTime) / 1000, 0.05);
       this.lastTime = now;
-      this.elapsed = Math.min((now - this.startTime) / 1000, this.duration);
-      if (this.elapsed >= this.duration) this.finished = true;
+      this.elapsed = (now - this.startTime) / 1000;
+      if (this.duration > 0 && this.elapsed >= this.duration) {
+        this.elapsed = this.duration;
+        this.finished = true;
+      }
       return dt;
+    }
+
+    // Vidas restantes para o HUD, ou null se o treino não usa vidas.
+    get livesLeft() {
+      return null;
     }
 
     // update(now, camera, firing) — firing = botão esquerdo pressionado.

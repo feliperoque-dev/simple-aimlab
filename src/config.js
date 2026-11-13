@@ -22,7 +22,8 @@
     hard: { label: 'Difícil', radius: 0.18, speed: 1.3, recordId: 'small' },
   };
 
-  Aim.DURATIONS = [30, 60, 120];
+  // 0 = "Padrão": sem tempo fixo, só para treinos com `untimed` (acabam por derrota).
+  Aim.DURATIONS = [0, 30, 60, 120];
 
   // Movimento do alvo no treino de seguir.
   Aim.MOVEMENTS = {

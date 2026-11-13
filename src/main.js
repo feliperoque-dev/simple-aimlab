@@ -34,16 +34,20 @@
     hold: $('hold'),
     // hud
     hudTime: $('hud-time'),
+    hudLives: $('hud-lives'),
+    hudLivesBox: $('hud-lives-box'),
     hudScore: $('hud-score'),
     hudAcc: $('hud-acc'),
   };
 
   const settings = Aim.loadSettings();
   if (!MODES[settings.mode]) settings.mode = 'gridshot';
+  if (!settings.duration && !MODES[settings.mode].untimed) settings.duration = 60;
 
   const camera = new Aim.Camera();
   const renderer = new Aim.Renderer(ui.canvas, camera);
 
+  let lastMode = settings.mode;
   let state = 'menu'; // menu | countdown | playing | results
   let mode = newMode();
   let countdownStart = 0;
@@ -104,6 +108,7 @@
   }
 
   function syncMenu() {
+    ui.duration.firstElementChild.hidden = !MODES[settings.mode].untimed; // "Padrão"
     markChoice(ui.modeCards, settings.mode);
     markChoice(ui.difficulty, settings.difficulty);
     markChoice(ui.duration, settings.duration);
@@ -116,6 +121,12 @@
   }
 
   function onMenuChange() {
+    // Treino sem tempo entra no "Padrão"; os outros não têm essa opção.
+    if (settings.mode !== lastMode) {
+      if (MODES[settings.mode].untimed) settings.duration = 0;
+      else if (!settings.duration) settings.duration = 60;
+      lastMode = settings.mode;
+    }
     Aim.saveSettings(settings);
     syncMenu();
     mode = newMode();
@@ -294,7 +305,10 @@
   function drawFrame(now) {
     renderer.draw(mode, now, settings.crosshair);
     if (!isRunning()) return;
-    ui.hudTime.textContent = Math.ceil(mode.duration - mode.elapsed);
+    ui.hudTime.textContent = mode.duration ? Math.ceil(mode.duration - mode.elapsed) : Math.floor(mode.elapsed);
+    const lives = mode.livesLeft;
+    ui.hudLivesBox.hidden = lives === null;
+    if (lives !== null) ui.hudLives.textContent = lives;
     ui.hudScore.textContent = mode.score;
     ui.hudAcc.textContent = `${Math.round(mode.accuracy * 100)}%`;
   }
@@ -320,7 +334,7 @@
     }
     const difficulty = DIFFICULTIES[settings.difficulty].label;
     const movement = settings.mode === 'tracking' ? ` · ${MOVEMENTS[settings.movement].label}` : '';
-    $('r-title').textContent = `${MODES[settings.mode].label}${movement} · ${difficulty} · ${settings.duration} s`;
+    $('r-title').textContent = `${MODES[settings.mode].label}${movement} · ${difficulty} · ${settings.duration ? `${settings.duration} s` : 'Padrão'}`;
     $('r-raw').hidden = rawInput;
     renderChart($('r-chart'), Aim.getRuns(settings, CHART_RUNS), true);
 
@@ -396,7 +410,7 @@
   buildChoices(ui.modeCards, 'mode', Object.entries(MODES).map(([id, m]) => [id, m.label, m.description]));
   buildChoices(ui.difficulty, 'difficulty', Object.entries(DIFFICULTIES).map(([id, d]) => [id, d.label]));
   buildChoices(ui.movement, 'movement', Object.entries(MOVEMENTS).map(([id, m]) => [id, m.label]));
-  buildChoices(ui.duration, 'duration', DURATIONS.map((seconds) => [seconds, `${seconds} s`]));
+  buildChoices(ui.duration, 'duration', DURATIONS.map((seconds) => [seconds, seconds ? `${seconds} s` : 'Padrão']));
   fillSettingsForm();
   syncSettings();
   renderer.resize(GAMES[settings.game].hfov);

@@ -18,6 +18,9 @@ Quatro treinos:
   Acerte antes que passem; as que passam somem sem tirar pontos.
   Começa com poucas e devagar; a quantidade e a velocidade crescem até o fim da partida,
   mais rápido nas dificuldades altas.
+  Duas durações: **Padrão** (sem tempo; você tem "vidas" e perde bolinhas que passam, com
+  limite de 16 no Fácil, 12 no Médio e 9 no Difícil) ou um **tempo fixo** de 30/60/120 s,
+  em que passar bolinhas não encerra o treino.
 - **Seguir o alvo:** uma bolinha se move sem parar e você pontua enquanto a mira estiver
   em cima dela. Dois movimentos, escolhidos no menu: **livre** (curvas suaves, inclusive
   para perto e para longe) ou **horizontal** (só de um lado para o outro, com trocas
