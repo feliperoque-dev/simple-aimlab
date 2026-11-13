@@ -14,15 +14,13 @@ Quatro treinos:
 - **Flick de cabeça:** um alvo pequeno por vez, sempre na altura da cabeça. Entre um alvo
   e outro, leve a mira ao anel de referência no centro da tela; ao parar nele, o próximo
   alvo aparece. O alvo tem tempo de vida curto (cerca de 1,1 s no Médio, mais longo no
-  Fácil e mais curto no Difícil); se sumir sem ser acertado, conta como erro (−50). Mostra quantos alvos você acertou no primeiro tiro.
+  Fácil e mais curto no Difícil); se sumir sem ser acertado, conta como erro (−5). Mostra quantos alvos você acertou no primeiro tiro.
 - **Chuva de bolinhas:** várias bolinhas pequenas vêm do fundo da sala na sua direção.
   Acerte antes que passem; as que passam somem sem tirar pontos.
-  Começa com poucas e devagar; a quantidade e a velocidade crescem até o fim da partida.
-  Tamanho das bolinhas e área de nascimento são iguais em todas as dificuldades: só a
-  velocidade muda.
-  Duas durações: **Padrão** (sem tempo; você tem "vidas" e perde bolinhas que passam, com
-  limite de 12) ou um **tempo fixo** de 30/60/120 s,
-  em que passar bolinhas não encerra o treino.
+  Não tem tempo fixo: você tem 12 "vidas" e o treino acaba quando passam 12 bolinhas.
+  Começa com poucas e devagar; a quantidade e a velocidade sobem sem parar, e a velocidade
+  sobe mais rápido nas dificuldades altas. Tamanho das bolinhas e área de nascimento são
+  iguais em todas as dificuldades.
 - **Seguir o alvo:** uma bolinha se move sem parar e você pontua enquanto a mira estiver
   em cima dela. Dois movimentos, escolhidos no menu: **livre** (curvas suaves, inclusive
   para perto e para longe) ou **horizontal** (só de um lado para o outro, com trocas
@@ -89,8 +87,8 @@ no Windows suportam isso; se o navegador não suportar, a tela de resultado avis
 
 ## Pontuação e evolução
 
-- **3 alvos, Flick de cabeça e Chuva:** acerto **+100**, erro **−50**.
-- **Seguir o alvo:** **100 pontos por segundo** com a mira em cima da bolinha.
+- **3 alvos, Flick de cabeça e Chuva:** acerto **+10**, erro **−5**.
+- **Seguir o alvo:** **10 pontos por segundo** com a mira em cima da bolinha.
 - Acerto e erro só têm aviso sonoro (dá para desligar nas configurações).
 - O recorde e as últimas partidas ficam salvos no navegador, separados por treino, jogo,
   dificuldade e duração. O menu e a tela de resultado mostram um gráfico das últimas 20.

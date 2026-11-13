@@ -22,8 +22,7 @@
     hard: { label: 'Difícil', radius: 0.18, speed: 1.3, recordId: 'small' },
   };
 
-  // 0 = "Padrão": sem tempo fixo, só para treinos com `untimed` (acabam por derrota).
-  Aim.DURATIONS = [0, 30, 60, 120];
+  Aim.DURATIONS = [30, 60, 120];
 
   // Movimento do alvo no treino de seguir.
   Aim.MOVEMENTS = {
@@ -67,7 +66,31 @@
     }
   }
 
+  Aim.defaultSettings = function () {
+    return JSON.parse(JSON.stringify(DEFAULTS));
+  };
+
+  // As pontuações foram divididas por 10 para ficarem mais legíveis: converte
+  // os recordes e o histórico antigos uma única vez.
+  const SCALE_KEY = 'simple-aimlab:score-scale';
+  function migrateScores() {
+    try {
+      if (localStorage.getItem(SCALE_KEY)) return;
+      const bests = read(BEST_KEY, {});
+      for (const id of Object.keys(bests)) bests[id] = Math.round(bests[id] / 10);
+      write(BEST_KEY, bests);
+      write(
+        HISTORY_KEY,
+        read(HISTORY_KEY, []).map((run) => ({ ...run, score: Math.round(run.score / 10) })),
+      );
+      localStorage.setItem(SCALE_KEY, '10');
+    } catch {
+      // Sem armazenamento: nada para converter.
+    }
+  }
+
   Aim.loadSettings = function () {
+    migrateScores();
     const saved = read(SETTINGS_KEY, {});
     // Formatos antigos: mira era só a cor; dificuldade era "tamanho do alvo".
     if (typeof saved.crosshair === 'string') saved.crosshair = { color: saved.crosshair };
@@ -111,7 +134,9 @@
   function runId(s) {
     // Recordes antigos do strafe ficam sob o id "strafe".
     const mode = s.mode === 'tracking' && s.movement === 'horizontal' ? 'strafe' : s.mode;
-    return `${mode}:${s.game}:${Aim.DIFFICULTIES[s.difficulty].recordId}:${s.duration}`;
+    // Treino sem tempo (endless) guarda recorde com duração 0.
+    const duration = Aim.MODES[s.mode].endless ? 0 : s.duration;
+    return `${mode}:${s.game}:${Aim.DIFFICULTIES[s.difficulty].recordId}:${duration}`;
   }
 
   Aim.getBest = function (settings) {

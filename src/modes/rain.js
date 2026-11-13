@@ -1,9 +1,8 @@
 // Treino "chuva": várias bolinhas pequenas vêm do fundo da sala em direção à
-// tela. Acerte antes que cheguem; as que passam somem sem tirar pontos.
-// Começa com poucas e devagar; a quantidade e a velocidade sobem até o teto.
-// A dificuldade muda só a velocidade. Duas formas de jogar:
-//   padrão (duração 0) — sem tempo: acaba quando passam bolinhas demais;
-//   tempo fixo        — dura o tempo escolhido e passar bolinhas não encerra.
+// tela. Acerte antes que cheguem; as que passam somem sem tirar pontos, mas o
+// treino acaba quando passam bolinhas demais (não tem tempo fixo).
+// Começa com poucas e devagar; a quantidade e a velocidade sobem sem parar, e
+// a velocidade sobe mais rápido nas dificuldades altas.
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
@@ -17,17 +16,19 @@
   const END_Z = 1.2; // passou daqui, a bolinha some
   const SPREAD_X = 0.9; // área de nascimento: pequena e no centro do fundo
   const SPREAD_Y = 0.5;
-  const RAMP_S = 90; // no modo padrão, segundos até chegar no teto
-  const LEAK_BUDGET = 12; // bolinhas que podem passar no modo Padrão
-  const BASE_SPEED = 3 * DEPTH; // m/s (percurso maior, mesmo tempo de voo), vezes o multiplicador da dificuldade
+  const RAMP_S = 90; // segundos até chegar no máximo de bolinhas
+  const GAIN = (1 - START_SPEED) / RAMP_S; // ganho de velocidade por segundo (Médio)
+  const MAX_PACE = 1.6; // teto do ganho de velocidade
+  const LEAK_BUDGET = 12; // bolinhas que podem passar antes do fim
+  const BASE_SPEED = 2.2 * DEPTH; // m/s (percurso maior, mesmo tempo de voo), vezes o multiplicador da dificuldade
 
   const rand = (min, max) => min + Math.random() * (max - min);
 
   class Rain extends Aim.ClickMode {
     // Tamanho das bolinhas e área de nascimento são iguais em todas as
     // dificuldades (as do Difícil); só a velocidade muda.
-    constructor({ duration, speed }) {
-      super({ radius: Aim.DIFFICULTIES.hard.radius * SMALL, duration });
+    constructor({ speed }) {
+      super({ radius: Aim.DIFFICULTIES.hard.radius * SMALL, duration: 0 }); // sem tempo
       this.speed = speed;
       this.maxCount = MAX_COUNT;
       this.maxLeaks = LEAK_BUDGET;
@@ -40,9 +41,9 @@
 
     update(now) {
       const dt = this.tick(now);
-      const span = this.duration > 0 ? this.duration : RAMP_S;
-      const progress = Math.min(1, this.elapsed / span); // 0 → 1
-      const pace = START_SPEED + (1 - START_SPEED) * progress;
+      const progress = Math.min(1, this.elapsed / RAMP_S); // 0 → 1
+      // A velocidade sobe sem parar, e quanto maior a dificuldade mais rápido ela sobe.
+      const pace = Math.min(MAX_PACE, START_SPEED + GAIN * this.speed * this.elapsed);
       const wanted = Math.round(START_COUNT + (this.maxCount - START_COUNT) * progress);
       while (this.targets.length < wanted) this.targets.push(this._spawn(SPAWN_Z));
       for (let i = 0; i < this.targets.length; i++) {
@@ -53,11 +54,11 @@
           this.leaks++;
         }
       }
-      if (this.duration === 0 && this.leaks >= this.maxLeaks) this.finished = true;
+      if (this.leaks >= this.maxLeaks) this.finished = true;
     }
 
     get livesLeft() {
-      return this.duration === 0 ? Math.max(0, this.maxLeaks - this.leaks) : null;
+      return Math.max(0, this.maxLeaks - this.leaks);
     }
 
     onKill(index) {
@@ -66,7 +67,7 @@
 
     results() {
       return [
-        ...(this.duration === 0 ? [['Tempo sobrevivido', `${Math.floor(this.elapsed)} s`]] : []),
+        ['Tempo sobrevivido', `${Math.floor(this.elapsed)} s`],
         ['Bolinhas que passaram', this.leaks],
         ['Acertos / tiros', `${this.hits} / ${this.shots}`],
         ['Precisão', `${(this.accuracy * 100).toFixed(1)}%`],
@@ -87,7 +88,7 @@
   Aim.MODES.rain = {
     label: 'Chuva de bolinhas',
     description: 'Várias bolinhas pequenas vindo na sua direção. Acerte antes que passem.',
-    untimed: true, // aceita a duração "Padrão" (sem tempo)
+    endless: true, // sem duração: acaba quando passam bolinhas demais
     create: (options) => new Rain(options),
   };
 })();

@@ -6,7 +6,7 @@
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
-  const POINTS_PER_SECOND = 100;
+  const POINTS_PER_SECOND = 10;
   const rand = (min, max) => min + Math.random() * (max - min);
 
   const PATTERNS = {

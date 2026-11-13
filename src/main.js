@@ -44,13 +44,11 @@
 
   const settings = Aim.loadSettings();
   if (!MODES[settings.mode]) settings.mode = 'gridshot';
-  if (!settings.duration && !MODES[settings.mode].untimed) settings.duration = 60;
 
   const camera = new Aim.Camera();
   const renderer = new Aim.Renderer(ui.canvas, camera);
   renderer.setColors(settings.colors);
 
-  let lastMode = settings.mode;
   let state = 'menu'; // menu | countdown | playing | results
   let mode = newMode();
   let countdownStart = 0;
@@ -64,7 +62,7 @@
     return MODES[settings.mode].create({
       radius: difficulty.radius,
       speed: difficulty.speed,
-      duration: settings.duration,
+      duration: MODES[settings.mode].endless ? 0 : settings.duration,
       holdToTrack: settings.holdToTrack,
       movement: settings.movement,
     });
@@ -111,7 +109,7 @@
   }
 
   function syncMenu() {
-    ui.duration.firstElementChild.hidden = !MODES[settings.mode].untimed; // "Padrão"
+    ui.duration.parentElement.hidden = Boolean(MODES[settings.mode].endless); // sem tempo
     markChoice(ui.modeCards, settings.mode);
     markChoice(ui.difficulty, settings.difficulty);
     markChoice(ui.duration, settings.duration);
@@ -124,12 +122,6 @@
   }
 
   function onMenuChange() {
-    // Treino sem tempo entra no "Padrão"; os outros não têm essa opção.
-    if (settings.mode !== lastMode) {
-      if (MODES[settings.mode].untimed) settings.duration = 0;
-      else if (!settings.duration) settings.duration = 60;
-      lastMode = settings.mode;
-    }
     Aim.saveSettings(settings);
     syncMenu();
     mode = newMode();
@@ -184,7 +176,6 @@
   // ---------- Configurações ----------
 
   function fillSettingsForm() {
-    for (const [id, game] of Object.entries(GAMES)) ui.game.add(new Option(game.label, id));
     ui.game.value = settings.game;
     ui.sens.value = settings.sens[settings.game];
     ui.dpi.value = settings.dpi;
@@ -342,7 +333,7 @@
     }
     const difficulty = DIFFICULTIES[settings.difficulty].label;
     const movement = settings.mode === 'tracking' ? ` · ${MOVEMENTS[settings.movement].label}` : '';
-    $('r-title').textContent = `${MODES[settings.mode].label}${movement} · ${difficulty} · ${settings.duration ? `${settings.duration} s` : 'Padrão'}`;
+    $('r-title').textContent = `${MODES[settings.mode].label}${movement} · ${difficulty}${MODES[settings.mode].endless ? '' : ` · ${settings.duration} s`}`;
     $('r-raw').hidden = rawInput;
     renderChart($('r-chart'), Aim.getRuns(settings, CHART_RUNS), true);
 
@@ -407,6 +398,20 @@
   });
 
   ui.panels.settings.addEventListener('input', onSettingsInput);
+  // Volta jogo, mouse, mira, cores e som ao padrão. Treino, dificuldade e duração ficam.
+  $('reset-settings').addEventListener('click', () => {
+    if (!confirm('Restaurar as configurações (mouse, mira, cores e som) para o padrão?')) return;
+    const defaults = Aim.defaultSettings();
+    for (const key of ['game', 'sens', 'dpi', 'crosshair', 'colors', 'sound', 'holdToTrack']) {
+      settings[key] = defaults[key];
+    }
+    Aim.saveSettings(settings);
+    fillSettingsForm();
+    syncSettings();
+    renderer.setColors(settings.colors);
+    renderer.resize(GAMES[settings.game].hfov);
+    drawFrame(performance.now());
+  });
   ui.openSettings.addEventListener('click', () => show('settings'));
   $('close-settings').addEventListener('click', () => backToMenu());
   $('play').addEventListener('click', startRun);
@@ -418,7 +423,8 @@
   buildChoices(ui.modeCards, 'mode', Object.entries(MODES).map(([id, m]) => [id, m.label, m.description]));
   buildChoices(ui.difficulty, 'difficulty', Object.entries(DIFFICULTIES).map(([id, d]) => [id, d.label]));
   buildChoices(ui.movement, 'movement', Object.entries(MOVEMENTS).map(([id, m]) => [id, m.label]));
-  buildChoices(ui.duration, 'duration', DURATIONS.map((seconds) => [seconds, seconds ? `${seconds} s` : 'Padrão']));
+  buildChoices(ui.duration, 'duration', DURATIONS.map((seconds) => [seconds, `${seconds} s`]));
+  for (const [id, game] of Object.entries(GAMES)) ui.game.add(new Option(game.label, id));
   fillSettingsForm();
   syncSettings();
   renderer.resize(GAMES[settings.game].hfov);

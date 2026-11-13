@@ -3,8 +3,8 @@
 (function () {
   const Aim = (window.Aim = window.Aim || {});
 
-  const HIT_POINTS = 100;
-  const MISS_PENALTY = 50;
+  const HIT_POINTS = 10;
+  const MISS_PENALTY = 5;
 
   const tmp = { x: 0, y: 0, z: 0 };
 
@@ -69,7 +69,7 @@
     }
   }
 
-  // Treinos de clicar: +100 por acerto, −50 por erro.
+  // Treinos de clicar: +10 por acerto, −5 por erro.
   class ClickMode extends Mode {
     constructor(options) {
       super(options);
