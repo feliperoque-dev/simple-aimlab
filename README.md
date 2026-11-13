@@ -65,6 +65,7 @@ O botão **Configurações** no canto do menu guarda o que você ajusta uma vez 
 
 - **Jogo e mouse:** jogo, sensibilidade e DPI.
 - **Mira:** cor, tamanho, espessura, abertura e ponto central, com prévia ao vivo.
+- **Cores:** cor dos alvos e cor de fundo (a grade da sala se ajusta ao fundo), com mudança ao vivo.
 - **Som** de acerto e erro.
 - **Seguir: pontuar só segurando o clique** — para treinar o tracking com o botão
   pressionado, como num spray.

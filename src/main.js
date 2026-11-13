@@ -30,6 +30,8 @@
     chThickness: $('ch-thickness'),
     chGap: $('ch-gap'),
     chDot: $('ch-dot'),
+    colorTarget: $('color-target'),
+    colorBg: $('color-bg'),
     sound: $('sound'),
     hold: $('hold'),
     // hud
@@ -46,6 +48,7 @@
 
   const camera = new Aim.Camera();
   const renderer = new Aim.Renderer(ui.canvas, camera);
+  renderer.setColors(settings.colors);
 
   let lastMode = settings.mode;
   let state = 'menu'; // menu | countdown | playing | results
@@ -190,6 +193,8 @@
     ui.chThickness.value = settings.crosshair.thickness;
     ui.chGap.value = settings.crosshair.gap;
     ui.chDot.checked = settings.crosshair.dot;
+    ui.colorTarget.value = settings.colors.target;
+    ui.colorBg.value = settings.colors.background;
     ui.sound.checked = settings.sound;
     ui.hold.checked = settings.holdToTrack;
   }
@@ -215,6 +220,9 @@
       gap: Number(ui.chGap.value),
       dot: ui.chDot.checked,
     };
+    settings.colors = { target: ui.colorTarget.value, background: ui.colorBg.value };
+    renderer.setColors(settings.colors);
+    drawFrame(performance.now()); // o fundo muda ao vivo atrás do painel
     settings.sound = ui.sound.checked;
     settings.holdToTrack = ui.hold.checked;
     Aim.saveSettings(settings);

@@ -46,6 +46,7 @@
     dpi: 800,
     // Medidas da mira em pixels de tela.
     crosshair: { color: '#00ff88', length: 6, thickness: 2, gap: 3, dot: false },
+    colors: { target: '#22d3b0', background: '#0d1117' },
     sound: true,
     holdToTrack: false, // treinos de seguir só pontuam com o clique pressionado
   };
@@ -85,7 +86,11 @@
       ...saved,
       sens: { ...DEFAULTS.sens, ...saved.sens },
       crosshair: { ...DEFAULTS.crosshair, ...saved.crosshair },
+      colors: { ...DEFAULTS.colors, ...saved.colors },
     };
+    for (const key of Object.keys(DEFAULTS.colors)) {
+      if (!/^#[0-9a-f]{6}$/i.test(settings.colors[key])) settings.colors[key] = DEFAULTS.colors[key];
+    }
     if (!Aim.GAMES[settings.game]) settings.game = DEFAULTS.game;
     if (!Aim.DIFFICULTIES[settings.difficulty]) settings.difficulty = DEFAULTS.difficulty;
     if (!Aim.MOVEMENTS[settings.movement]) settings.movement = DEFAULTS.movement;

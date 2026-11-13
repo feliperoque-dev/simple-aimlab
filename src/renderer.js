@@ -4,8 +4,18 @@
 
   const NEAR = 0.05;
   const ROOM = { halfWidth: 6, halfHeight: 3, halfDepth: 8 };
-  const TARGET_COLORS = ['#c9fff3', '#22d3b0', '#0b7f6a'];
   const HOT_COLORS = ['#fff3c9', '#ffb020', '#b85c00']; // pontuando (treinos de seguir)
+
+  // Mistura duas cores "#rrggbb": t = 0 devolve a, t = 1 devolve b.
+  function mix(a, b, t) {
+    const channel = (hex, i) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+    let out = '#';
+    for (let i = 0; i < 3; i++) {
+      const v = Math.round(channel(a, i) * (1 - t) + channel(b, i) * t);
+      out += v.toString(16).padStart(2, '0');
+    }
+    return out;
+  }
 
   // Linhas da grade nas 6 faces da sala: [ax, ay, az, bx, by, bz].
   function buildRoom(D) {
@@ -57,11 +67,23 @@
       this.canvas = canvas;
       this.camera = camera;
       this.ctx = canvas.getContext('2d', { alpha: false });
+      this.setColors({ target: '#22d3b0', background: '#0d1117' });
       this.roomDepth = ROOM.halfDepth;
       this.room = buildRoom(this.roomDepth);
       this.dpr = 1;
       this._a = { x: 0, y: 0, z: 0 };
       this._b = { x: 0, y: 0, z: 0 };
+    }
+
+    // Cor dos alvos (claro → escuro para o brilho), do fundo e da grade da sala.
+    setColors({ target, background }) {
+      const lum = (c) => {
+        const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+        return 0.299 * r + 0.587 * g + 0.114 * b;
+      };
+      this.background = background;
+      this.gridColor = mix(background, lum(background) > 128 ? '#000000' : '#ffffff', 0.13);
+      this.targetColors = [mix(target, '#ffffff', 0.8), target, mix(target, '#000000', 0.55)];
     }
 
     resize(hfov) {
@@ -73,7 +95,7 @@
 
     draw(mode, now, crosshair) {
       const { ctx, canvas, camera } = this;
-      ctx.fillStyle = '#0d1117';
+      ctx.fillStyle = this.background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       this._setRoomDepth(mode.roomDepth || ROOM.halfDepth);
       this._drawRoom();
@@ -112,7 +134,7 @@
         ctx.moveTo(cx + (a.x / a.z) * focal, cy - (a.y / a.z) * focal);
         ctx.lineTo(cx + (b.x / b.z) * focal, cy - (b.y / b.z) * focal);
       }
-      ctx.strokeStyle = '#263041';
+      ctx.strokeStyle = this.gridColor;
       ctx.lineWidth = this.dpr;
       ctx.stroke();
     }
@@ -123,7 +145,7 @@
         if (!this._project(t.x, t.y, t.z, p)) continue;
         const r = (mode.radius / p.z) * camera.focal;
         const g = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.35, r * 0.05, p.x, p.y, r);
-        const colors = t.hot ? HOT_COLORS : TARGET_COLORS;
+        const colors = t.hot ? HOT_COLORS : this.targetColors;
         g.addColorStop(0, colors[0]);
         g.addColorStop(0.45, colors[1]);
         g.addColorStop(1, colors[2]);
@@ -142,7 +164,7 @@
       const r = (mode.refRadius / p.z) * camera.focal;
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = mode.refReady ? TARGET_COLORS[1] : '#8b98ad';
+      ctx.strokeStyle = mode.refReady ? this.targetColors[1] : '#8b98ad';
       ctx.lineWidth = 2 * dpr;
       ctx.stroke();
     }
