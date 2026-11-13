@@ -75,6 +75,7 @@
       super(options);
       this.hits = 0;
       this.shots = 0;
+      this.timeouts = 0; // alvos que sumiram sozinhos (contam como erro na pontuação)
     }
 
     shoot(camera, now) {
@@ -94,7 +95,7 @@
     onMiss() {}
 
     get score() {
-      return Math.max(0, this.hits * HIT_POINTS - (this.shots - this.hits) * MISS_PENALTY);
+      return Math.max(0, this.hits * HIT_POINTS - (this.shots - this.hits + this.timeouts) * MISS_PENALTY);
     }
 
     get accuracy() {

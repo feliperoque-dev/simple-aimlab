@@ -13,7 +13,8 @@ Quatro treinos:
   um pouco mais perto ou mais longe, então o tamanho na tela varia.
 - **Flick de cabeça:** um alvo pequeno por vez, sempre na altura da cabeça. Entre um alvo
   e outro, leve a mira ao anel de referência no centro da tela; ao parar nele, o próximo
-  alvo aparece. Mostra quantos alvos você acertou no primeiro tiro.
+  alvo aparece. O alvo tem tempo de vida curto (cerca de 1,1 s no Médio, mais longo no
+  Fácil e mais curto no Difícil); se sumir sem ser acertado, conta como erro (−50). Mostra quantos alvos você acertou no primeiro tiro.
 - **Chuva de bolinhas:** várias bolinhas pequenas vêm do fundo da sala na sua direção.
   Acerte antes que passem; as que passam somem sem tirar pontos.
   Começa com poucas e devagar; a quantidade e a velocidade crescem até o fim da partida.

@@ -12,6 +12,7 @@
   const MIN_DISTANCE = 5.5;
   const MAX_DISTANCE = 7.5;
   const REF_RADIUS = 0.22; // anel de referência (metros a 6,5 m)
+  const LIFE_MS = 1100; // tempo de vida do alvo no Médio
   const HOLD_MS = 250; // tempo parado no anel antes do alvo nascer
 
   const tmp = { x: 0, y: 0, z: 0 };
@@ -19,6 +20,7 @@
   class Flick extends Aim.ClickMode {
     constructor(options) {
       super({ ...options, radius: options.radius * HEAD_SCALE });
+      this.lifeMs = LIFE_MS / options.speed; // fácil ~1470 ms, médio 1100, difícil ~850
       this.firstShotKills = 0;
       this.missesOnTarget = 0; // erros no alvo atual
       this.reference = { x: 0, y: 0, z: DISTANCE };
@@ -32,7 +34,10 @@
 
     update(now, camera) {
       this.tick(now);
-      if (this.targets.length) return;
+      if (this.targets.length) {
+        if (now - this.spawnedAt >= this.lifeMs) this._expire();
+        return;
+      }
       camera.toCamera(this.reference.x, this.reference.y, this.reference.z, tmp);
       const r = this.refRadius;
       this.refReady = tmp.z > 0 && tmp.x * tmp.x + tmp.y * tmp.y <= r * r;
@@ -45,6 +50,16 @@
         this.targets.push(this._spawn(this.lastX));
         this.spawnedAt = now;
       }
+    }
+
+    // O alvo não foi acertado a tempo: some, custa pontos e a mira volta ao anel.
+    _expire() {
+      this.timeouts++;
+      this.missesOnTarget = 0;
+      this.lastX = this.targets[0].gridX;
+      this.targets.length = 0;
+      this.refReady = false;
+      this.holdSince = 0;
     }
 
     // Sem alvo na tela o clique não conta.
@@ -76,6 +91,7 @@
       return [
         ['Acertos / tiros', `${this.hits} / ${this.shots}`],
         ['Precisão', `${(this.accuracy * 100).toFixed(1)}%`],
+        ['Alvos que sumiram', this.timeouts],
         ['Acerto no primeiro tiro', `${firstShot.toFixed(0)}%`],
         ['Tempo médio para acertar', this.hits ? `${Math.round(this.avgKillMs)} ms` : '—'],
       ];
@@ -96,7 +112,7 @@
 
   Aim.MODES.flick = {
     label: 'Flick de cabeça',
-    description: 'Volte a mira ao anel central e flicke no alvo pequeno que aparece. Acerte no primeiro tiro.',
+    description: 'Volte a mira ao anel central e flicke no alvo pequeno que aparece. Ele some rápido: acerte no primeiro tiro.',
     create: (options) => new Flick(options),
   };
 })();
