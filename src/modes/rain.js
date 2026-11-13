@@ -11,13 +11,15 @@
   const START_COUNT = 2; // bolinhas no começo da partida
   const MAX_COUNT = 10; // bolinhas na tela no fim da subida
   const START_SPEED = 0.6; // fração da velocidade final no começo
-  const SPAWN_Z = 8; // fundo da sala: todas as bolinhas nascem aqui
+  const SPAWN_Z = 22; // fundo da sala: todas as bolinhas nascem aqui
+  const REF_Z = 8; // profundidade em que as medidas abaixo foram definidas
+  const DEPTH = SPAWN_Z / REF_Z; // mesma área na tela, só que mais longe
   const END_Z = 1.2; // passou daqui, a bolinha some
   const SPREAD_X = 0.9; // área de nascimento: pequena e no centro do fundo
   const SPREAD_Y = 0.5;
   const RAMP_S = 90; // no modo padrão, segundos até chegar no teto
   const LEAK_BUDGET = 12; // bolinhas que podem passar no modo Padrão
-  const BASE_SPEED = 3; // m/s, vezes o multiplicador da dificuldade
+  const BASE_SPEED = 3 * DEPTH; // m/s (percurso maior, mesmo tempo de voo), vezes o multiplicador da dificuldade
 
   const rand = (min, max) => min + Math.random() * (max - min);
 
@@ -30,6 +32,7 @@
       this.maxCount = MAX_COUNT;
       this.maxLeaks = LEAK_BUDGET;
       this.leaks = 0;
+      this.roomDepth = SPAWN_Z; // o renderer aprofunda a sala para este treino
       for (let i = 0; i < START_COUNT; i++) {
         this.targets.push(this._spawn(SPAWN_Z));
       }
@@ -73,8 +76,8 @@
 
     _spawn(z) {
       return {
-        x: rand(-SPREAD_X, SPREAD_X),
-        y: rand(-SPREAD_Y, SPREAD_Y),
+        x: rand(-SPREAD_X, SPREAD_X) * DEPTH,
+        y: rand(-SPREAD_Y, SPREAD_Y) * DEPTH,
         z,
         speed: BASE_SPEED * this.speed * rand(0.8, 1.25),
       };

@@ -8,8 +8,8 @@
   const HOT_COLORS = ['#fff3c9', '#ffb020', '#b85c00']; // pontuando (treinos de seguir)
 
   // Linhas da grade nas 6 faces da sala: [ax, ay, az, bx, by, bz].
-  function buildRoom() {
-    const { halfWidth: W, halfHeight: H, halfDepth: D } = ROOM;
+  function buildRoom(D) {
+    const { halfWidth: W, halfHeight: H } = ROOM;
     const segs = [];
     for (let x = -W; x <= W; x++) {
       for (const z of [-D, D]) segs.push([x, -H, z, x, H, z]);
@@ -57,7 +57,8 @@
       this.canvas = canvas;
       this.camera = camera;
       this.ctx = canvas.getContext('2d', { alpha: false });
-      this.room = buildRoom();
+      this.roomDepth = ROOM.halfDepth;
+      this.room = buildRoom(this.roomDepth);
       this.dpr = 1;
       this._a = { x: 0, y: 0, z: 0 };
       this._b = { x: 0, y: 0, z: 0 };
@@ -74,10 +75,18 @@
       const { ctx, canvas, camera } = this;
       ctx.fillStyle = '#0d1117';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      this._setRoomDepth(mode.roomDepth || ROOM.halfDepth);
       this._drawRoom();
       this._drawTargets(mode);
       if (mode.reference) this._drawReference(mode);
       Aim.drawCrosshair(ctx, camera.cx, camera.cy, crosshair, this.dpr);
+    }
+
+    // Treinos com alvos muito distantes pedem uma sala mais funda.
+    _setRoomDepth(depth) {
+      if (depth === this.roomDepth) return;
+      this.roomDepth = depth;
+      this.room = buildRoom(depth);
     }
 
     // Projeta um ponto do mundo na tela. Retorna false se estiver atrás da câmera.
