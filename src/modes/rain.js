@@ -13,8 +13,8 @@
   const START_SPEED = 0.6; // fração da velocidade final no começo
   const SPAWN_Z = 8; // fundo da sala: todas as bolinhas nascem aqui
   const END_Z = 1.2; // passou daqui, a bolinha some
-  const SPREAD_X = 1.7; // área de nascimento, bem mais concentrada
-  const SPREAD_Y = 0.9;
+  const SPREAD_X = 0.9; // área de nascimento: pequena e no centro do fundo
+  const SPREAD_Y = 0.5;
   const RAMP_S = 90; // no modo padrão, segundos até chegar no teto
   const LEAK_BUDGET = 12; // bolinhas que podem passar, dividido pela dificuldade
   const BASE_SPEED = 3; // m/s, vezes o multiplicador da dificuldade
