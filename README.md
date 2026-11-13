@@ -16,10 +16,11 @@ Quatro treinos:
   alvo aparece. Mostra quantos alvos você acertou no primeiro tiro.
 - **Chuva de bolinhas:** várias bolinhas pequenas vêm do fundo da sala na sua direção.
   Acerte antes que passem; as que passam somem sem tirar pontos.
-  Começa com poucas e devagar; a quantidade e a velocidade crescem até o fim da partida,
-  mais rápido nas dificuldades altas.
+  Começa com poucas e devagar; a quantidade e a velocidade crescem até o fim da partida.
+  Tamanho das bolinhas e área de nascimento são iguais em todas as dificuldades: só a
+  velocidade muda.
   Duas durações: **Padrão** (sem tempo; você tem "vidas" e perde bolinhas que passam, com
-  limite de 16 no Fácil, 12 no Médio e 9 no Difícil) ou um **tempo fixo** de 30/60/120 s,
+  limite de 12) ou um **tempo fixo** de 30/60/120 s,
   em que passar bolinhas não encerra o treino.
 - **Seguir o alvo:** uma bolinha se move sem parar e você pontua enquanto a mira estiver
   em cima dela. Dois movimentos, escolhidos no menu: **livre** (curvas suaves, inclusive

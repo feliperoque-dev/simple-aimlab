@@ -1,7 +1,7 @@
 // Treino "chuva": várias bolinhas pequenas vêm do fundo da sala em direção à
 // tela. Acerte antes que cheguem; as que passam somem sem tirar pontos.
-// Começa com poucas e devagar; a quantidade e a velocidade sobem até um teto
-// que depende da dificuldade. Duas formas de jogar:
+// Começa com poucas e devagar; a quantidade e a velocidade sobem até o teto.
+// A dificuldade muda só a velocidade. Duas formas de jogar:
 //   padrão (duração 0) — sem tempo: acaba quando passam bolinhas demais;
 //   tempo fixo        — dura o tempo escolhido e passar bolinhas não encerra.
 (function () {
@@ -9,24 +9,26 @@
 
   const SMALL = 0.55; // bolinhas menores que as dos outros treinos
   const START_COUNT = 2; // bolinhas no começo da partida
-  const MAX_COUNT = 10; // no fim, vezes o multiplicador da dificuldade
+  const MAX_COUNT = 10; // bolinhas na tela no fim da subida
   const START_SPEED = 0.6; // fração da velocidade final no começo
   const SPAWN_Z = 8; // fundo da sala: todas as bolinhas nascem aqui
   const END_Z = 1.2; // passou daqui, a bolinha some
   const SPREAD_X = 0.9; // área de nascimento: pequena e no centro do fundo
   const SPREAD_Y = 0.5;
   const RAMP_S = 90; // no modo padrão, segundos até chegar no teto
-  const LEAK_BUDGET = 12; // bolinhas que podem passar, dividido pela dificuldade
+  const LEAK_BUDGET = 12; // bolinhas que podem passar no modo Padrão
   const BASE_SPEED = 3; // m/s, vezes o multiplicador da dificuldade
 
   const rand = (min, max) => min + Math.random() * (max - min);
 
   class Rain extends Aim.ClickMode {
-    constructor({ radius, duration, speed }) {
-      super({ radius: radius * SMALL, duration });
+    // Tamanho das bolinhas e área de nascimento são iguais em todas as
+    // dificuldades (as do Difícil); só a velocidade muda.
+    constructor({ duration, speed }) {
+      super({ radius: Aim.DIFFICULTIES.hard.radius * SMALL, duration });
       this.speed = speed;
-      this.maxCount = Math.round(MAX_COUNT * speed);
-      this.maxLeaks = Math.round(LEAK_BUDGET / speed); // fácil 16, médio 12, difícil 9
+      this.maxCount = MAX_COUNT;
+      this.maxLeaks = LEAK_BUDGET;
       this.leaks = 0;
       for (let i = 0; i < START_COUNT; i++) {
         this.targets.push(this._spawn(SPAWN_Z));
